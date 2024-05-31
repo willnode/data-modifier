@@ -1,20 +1,34 @@
 <script lang="ts">
   import Editor from "./lib/Editor.svelte";
   import SelectFormat from "./lib/SelectFormat.svelte";
+  import { JSTYPES, parse, stringify } from "./lib/util";
 
-  type FORMATTYPE = "plain" | "json" | "yaml" | "csv" | "sql";
+  type FORMATTYPE =
+    | "plain"
+    | "plain-lines"
+    | "json"
+    | "json-lines"
+    | "yaml"
+    | "csv"
+    | "csv-object"
+    | "sql"
+    | "sql-object";
 
   let inputRaw: string | null = null;
   let inputSize = null;
+  let inputEditor: Editor;
   let inputType: FORMATTYPE = "plain";
   let inputText = "";
-  let functionText = "return content.trim();";
+  let functionText = "return content;";
+  let functionEditor: Editor;
   let outputType: FORMATTYPE = "plain";
   let outputSize = null;
+  let outputEditor: Editor;
   let outputText = "";
+  let outputRaw = '';
   let outputLink = "";
 
-  let visibleEditor = 1;
+  let visibleEditor = -1;
 
   function cap(s: string) {
     const CAP = 5000;
@@ -25,6 +39,7 @@
     const fileInput = document.getElementById("fileInput") as HTMLInputElement;
     if (!fileInput) return;
     const file = fileInput.files?.[0];
+
     if (!file) {
       alert("Please select a file.");
       return;
@@ -44,33 +59,79 @@
       reader.readAsText(file);
     });
     inputText = cap(inputRaw || "");
+    inputEditor.setReadOnly(true);
   }
+
   function clearFile() {
     inputRaw = null;
     inputText = "";
+    inputEditor.setReadOnly(false);
   }
 
   async function process() {
-    let processedContent;
     try {
+      const finalInput = parse(inputRaw || inputText, inputType);
       const userFunction = new Function("content", functionText);
-      processedContent = userFunction(inputRaw || inputText);
-      if (typeof processedContent != "string") {
-        processedContent = JSON.stringify(processedContent);
-      }
+      outputRaw = stringify(userFunction(finalInput), outputType);
     } catch (error: any) {
       alert("Error in processing function: " + error?.message);
       return;
     }
 
-    outputText =
-      processedContent.length > 5000
-        ? processedContent.slice(0, 5000) + "...."
-        : processedContent;
+    outputText = cap(outputRaw);
 
-    const blob = new Blob([processedContent], { type: "text/plain" });
+    const blob = new Blob([outputRaw], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     outputLink = url;
+  }
+
+  function updateEditor(i: number) {
+    let next = i;
+    return function () {
+      let prev = visibleEditor;
+      if (prev == 0) {
+        if (inputRaw === null) {
+          inputText = inputEditor.getText();
+        }
+      } else if (prev == 1) {
+        let t = functionEditor.getText();
+        if (t.startsWith("function ")) {
+          t = t
+            .split("\n")
+            .slice(1, -1)
+            .map((x) => (x.startsWith("    ") ? x.slice(4) : x))
+            .join("\n");
+        }
+        functionText = t;
+      } else if (prev == 2) {
+      }
+
+      if (next == 0) {
+        if (inputRaw) {
+          if (inputEditor.getText() !== inputRaw) {
+            inputEditor.setReadOnly(false);
+            inputEditor.setText(inputRaw);
+            inputEditor.setReadOnly(true);
+          }
+        } else {
+          inputEditor.setText(inputText);
+        }
+        outputEditor.setLanguage(inputType);
+      } else if (next == 1) {
+        functionEditor.setText(
+          `function transform(content: ${JSTYPES[inputType]}): ${JSTYPES[outputType]} {\n${functionText
+            .split("\n")
+            .map((x) => "    " + x)
+            .join("\n")}\n}`,
+        );
+      } else if (next == 2) {
+        outputEditor.setReadOnly(false);
+        outputEditor.setText(outputRaw);
+        outputEditor.setReadOnly(true);
+        outputEditor.setLanguage(outputType);
+      }
+      visibleEditor = next;
+    };
   }
 </script>
 
@@ -96,7 +157,7 @@
           <button
             type="button"
             class="btn btn-outline-secondary"
-            on:click={() => (visibleEditor = 0)}
+            on:click={updateEditor(0)}
             class:active={visibleEditor == 0}
           >
             👉
@@ -107,7 +168,7 @@
           id="textInput"
           bind:value={inputText}
           rows={6}
-          readonly={inputRaw !== null}
+          readonly={inputRaw !== null || visibleEditor === 0}
         ></textarea>
       </div>
 
@@ -119,7 +180,7 @@
           <button
             type="button"
             class="ms-auto btn btn-outline-secondary"
-            on:click={() => (visibleEditor = 1)}
+            on:click={updateEditor(1)}
             class:active={visibleEditor == 1}
           >
             👉
@@ -131,6 +192,7 @@
           rows="5"
           bind:value={functionText}
           placeholder="Enter your JavaScript function here"
+          readonly={visibleEditor === 1}
         ></textarea>
       </div>
 
@@ -143,7 +205,7 @@
         <button
           type="button"
           class="btn btn-outline-secondary"
-          on:click={() => (visibleEditor = 2)}
+          on:click={updateEditor(2)}
           class:active={visibleEditor == 2}
         >
           👉
@@ -155,7 +217,7 @@
 
           <a
             id="downloadLink"
-            class="btn btn-success"
+            class="ms-auto btn btn-sm btn-success"
             href={outputLink}
             download="modified.txt"
             class:d-none={!outputLink}
@@ -173,9 +235,28 @@
       </div>
     </div>
     <div class="col-6">
-      <Editor hidden={visibleEditor !== 0} />
-      <Editor hidden={visibleEditor !== 1} />
-      <Editor hidden={visibleEditor !== 2} />
+      <Editor
+        bind:this={inputEditor}
+        hidden={visibleEditor !== 0}
+        initialConfig={() => ({
+          language: "plaintext",
+        })}
+      />
+      <Editor
+        bind:this={functionEditor}
+        hidden={visibleEditor !== 1}
+        initialConfig={() => ({
+          language: "typescript",
+        })}
+      />
+      <Editor
+        bind:this={outputEditor}
+        hidden={visibleEditor !== 2}
+        initialConfig={() => ({
+          language: "plaintext",
+          readOnly: true,
+        })}
+      />
     </div>
   </div>
 </div>

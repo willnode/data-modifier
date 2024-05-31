@@ -1,7 +1,7 @@
 import './app.css'
 import App from './App.svelte'
 
-import('./lib/monaco');
+import './monaco';
 
 const app = new App({
   target: document.getElementById('app')!,

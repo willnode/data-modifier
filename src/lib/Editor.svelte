@@ -1,11 +1,13 @@
 <script lang="ts">
     import type { editor } from "monaco-editor";
     import { onMount } from "svelte";
+    import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
 
-    let monaco;
     let container: HTMLElement;
     let editor: editor.IStandaloneCodeEditor;
     export let hidden: boolean = false;
+    export let initialConfig: () => editor.IStandaloneEditorConstructionOptions =
+        () => ({});
 
     export function getText() {
         return editor.getValue();
@@ -24,18 +26,33 @@
             },
         ]);
     }
+
+    export function setReadOnly(ro: boolean) {
+        editor.updateOptions({
+            readOnly: ro,
+        });
+    }
+
+    export function setLanguage(lang: string) {
+        let model = editor.getModel();
+        if (!model) {
+            return;
+        }
+        monaco.editor.setModelLanguage(model, lang);
+    }
+
     onMount(() => {
-        import("./monaco.js").then(async (mod) => {
-            monaco = mod.default;
-            editor = monaco.editor.create(container, {
-                value: ["// Click left items to start editing"].join("\n"),
-                language: "js",
-                theme: "vs-dark",
-                wordWrap: "on",
-                automaticLayout: true,
-            });
+        editor = monaco.editor.create(container, {
+            ...initialConfig(),
+            theme: "vs-dark",
+            wordWrap: "on",
+            automaticLayout: true,
         });
     });
 </script>
 
-<div class="monaco-container w-100 vh-100" class:d-none={hidden} bind:this={container}></div>
+<div
+    class="monaco-container w-100 vh-100"
+    class:d-none={hidden}
+    bind:this={container}
+></div>
