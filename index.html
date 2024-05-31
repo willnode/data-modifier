@@ -1,76 +1,13 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TXT File Processor</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body data-bs-theme="dark">
- 
-    <div class="container mt-5">
-        <h1 class="mb-4">TXT File Processor</h1>
-        
-        <div class="mb-3">
-            <label for="fileInput" class="form-label">Select TXT file:</label>
-            <input type="file" class="form-control" id="fileInput" accept=".txt">
-        </div>
-        
-        <div class="mb-3">
-            <label for="jsFunction" class="form-label">JavaScript Function:</label>
-            <textarea class="form-control font-monospace" id="jsFunction" rows="5" placeholder="Enter your JavaScript function here">return content.trim();</textarea>
-        </div>
-        
-        <button class="btn btn-primary mb-3" id="processBtn">Process File</button>
-        
-        <div class="mb-3">
-            <label for="outputText" class="form-label">Output:</label>
-            <textarea class="form-control" id="outputText" rows="10" readonly></textarea>
-        </div>
-        
-        <a id="downloadLink" class="btn btn-success" href="#" download="modified.txt" style="display: none;">Download Modified File</a>
-    </div>
-
-    <script>
-        document.getElementById('processBtn').addEventListener('click', function() {
-            const fileInput = document.getElementById('fileInput');
-            const jsFunctionText = document.getElementById('jsFunction').value;
-            const outputTextArea = document.getElementById('outputText');
-            const downloadLink = document.getElementById('downloadLink');
-
-            if (fileInput.files.length === 0) {
-                alert('Please select a file.');
-                return;
-            }
-
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-
-            reader.onload = function(event) {
-                const fileContent = event.target.result;
-
-                let processedContent;
-                try {
-                    const userFunction = new Function('content', jsFunctionText);
-                    processedContent = userFunction(fileContent);
-                    if (typeof processedContent != "string") {
-                        processedContent = JSON.stringify(processedContent);
-                    }
-                } catch (error) {
-                    alert('Error in processing function: ' + error.message);
-                    return;
-                }
-
-                outputTextArea.value = processedContent.length > 5000 ? processedContent.slice(0, 5000) + "...." : processedContent;
-
-                const blob = new Blob([processedContent], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                downloadLink.href = url;
-                downloadLink.style.display = 'block';
-            };
-
-            reader.readAsText(file);
-        });
-    </script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Data Modifier</title>
+  </head>
+  <body data-bs-theme="dark">
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
 </html>
