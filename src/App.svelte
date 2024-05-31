@@ -1,7 +1,7 @@
 <script lang="ts">
   type FORMATTYPE = "plain" | "json" | "yaml" | "csv" | "sql";
 
-  let inputRaw = null;
+  let inputRaw: string | null = null;
   let inputSize = null;
   let inputType: FORMATTYPE = "plain";
   let inputText = "";
@@ -11,28 +11,45 @@
   let outputText = "";
   let outputLink = "";
 
-  async function process() {
+  function cap(s: string) {
+    const CAP = 5000;
+    return s.length > CAP ? s.slice(0, CAP) + "\n........ (truncated)" : s;
+  }
+
+  async function openFile() {
     const fileInput = document.getElementById("fileInput") as HTMLInputElement;
+    if (!fileInput) return;
     const file = fileInput.files?.[0];
     if (!file) {
       alert("Please select a file.");
       return;
     }
-
     const reader = new FileReader();
 
-    const fileContent = await new Promise((resolve, reject) => {
+    inputRaw = await new Promise((resolve, reject) => {
       reader.onload = function (event: ProgressEvent<FileReader>) {
-        const fileContent = event.target?.result;
-        resolve(fileContent);
+        let fileContent = event.target?.result;
+        if (fileContent instanceof ArrayBuffer) {
+          resolve(new TextDecoder().decode(fileContent));
+        } else {
+          resolve(fileContent || null);
+        }
       };
+      reader.onerror = reject;
       reader.readAsText(file);
     });
+    inputText = cap(inputRaw || "");
+  }
+  function clearFile() {
+    inputRaw = null;
+    inputText = "";
+  }
 
+  async function process() {
     let processedContent;
     try {
       const userFunction = new Function("content", functionText);
-      processedContent = userFunction(fileContent);
+      processedContent = userFunction(inputRaw || inputText);
       if (typeof processedContent != "string") {
         processedContent = JSON.stringify(processedContent);
       }
@@ -56,9 +73,25 @@
   <div class="row">
     <div class="col-6">
       <div class="mb-3">
-        <label for="fileInput" class="form-label">Select TXT file:</label>
-        <input type="file" class="form-control" id="fileInput" accept=".txt" />
-        <textarea class="form-control" bind:value={inputText} rows={6}
+        <label for="textInput" class="form-label">Input:</label>
+        {#if inputRaw === null}
+          <label for="fileInput" class="btn btn-sm btn-success">
+            Open File
+            <input type="file" id="fileInput" on:input={openFile} />
+          </label>
+        {:else}
+          <button
+            type="button"
+            on:click={clearFile}
+            class="btn btn-sm btn-danger">Clear File</button
+          >
+        {/if}
+        <textarea
+          class="form-control"
+          id="textInput"
+          bind:value={inputText}
+          rows={6}
+          readonly={inputRaw !== null}
         ></textarea>
       </div>
 
@@ -100,3 +133,17 @@
     </div>
   </div>
 </div>
+
+<style>
+  #fileInput {
+    cursor: pointer;
+    outline: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    opacity: 0;
+  }
+</style>
