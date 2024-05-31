@@ -1,4 +1,7 @@
 <script lang="ts">
+  import Editor from "./lib/Editor.svelte";
+  import SelectFormat from "./lib/SelectFormat.svelte";
+
   type FORMATTYPE = "plain" | "json" | "yaml" | "csv" | "sql";
 
   let inputRaw: string | null = null;
@@ -10,6 +13,8 @@
   let outputSize = null;
   let outputText = "";
   let outputLink = "";
+
+  let visibleEditor = 1;
 
   function cap(s: string) {
     const CAP = 5000;
@@ -69,23 +74,34 @@
   }
 </script>
 
-<div class="container-fluid mt-5">
+<div class="container-fluid">
   <div class="row">
-    <div class="col-6">
+    <div class="col-6 py-5">
       <div class="mb-3">
-        <label for="textInput" class="form-label">Input:</label>
-        {#if inputRaw === null}
-          <label for="fileInput" class="btn btn-sm btn-success">
-            Open File
-            <input type="file" id="fileInput" on:input={openFile} />
-          </label>
-        {:else}
+        <div class="d-flex align-items-center">
+          <label for="textInput" class="form-label mb-0 me-2">Input: </label>
+          {#if inputRaw === null}
+            <label for="fileInput" class="btn btn-sm btn-success">
+              Open File
+              <input type="file" id="fileInput" on:input={openFile} />
+            </label>
+          {:else}
+            <button
+              type="button"
+              on:click={clearFile}
+              class="btn btn-sm btn-danger">Clear File</button
+            >
+          {/if}
+          <SelectFormat bind:value={inputType} />
           <button
             type="button"
-            on:click={clearFile}
-            class="btn btn-sm btn-danger">Clear File</button
+            class="btn btn-outline-secondary"
+            on:click={() => (visibleEditor = 0)}
+            class:active={visibleEditor == 0}
           >
-        {/if}
+            👉
+          </button>
+        </div>
         <textarea
           class="form-control"
           id="textInput"
@@ -96,7 +112,19 @@
       </div>
 
       <div class="mb-3">
-        <label for="jsFunction" class="form-label">JavaScript Function:</label>
+        <div class="d-flex align-items-center">
+          <label for="jsFunction" class="form-label mb-0">
+            JavaScript Function:
+          </label>
+          <button
+            type="button"
+            class="ms-auto btn btn-outline-secondary"
+            on:click={() => (visibleEditor = 1)}
+            class:active={visibleEditor == 1}
+          >
+            👉
+          </button>
+        </div>
         <textarea
           class="form-control font-monospace"
           id="jsFunction"
@@ -106,12 +134,35 @@
         ></textarea>
       </div>
 
-      <button class="btn btn-primary mb-3" on:click={process}>
-        Process File
-      </button>
+      <div class="d-flex mb-3">
+        <button class="btn btn-primary" on:click={process}>
+          Process File
+        </button>
+        <SelectFormat bind:value={outputType} />
 
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          on:click={() => (visibleEditor = 2)}
+          class:active={visibleEditor == 2}
+        >
+          👉
+        </button>
+      </div>
       <div class="mb-3">
-        <label for="outputText" class="form-label">Output:</label>
+        <div class="d-flex align-items-center">
+          <label for="outputText" class="form-label">Output:</label>
+
+          <a
+            id="downloadLink"
+            class="btn btn-success"
+            href={outputLink}
+            download="modified.txt"
+            class:d-none={!outputLink}
+          >
+            Download Modified File
+          </a>
+        </div>
         <textarea
           class="form-control"
           id="outputText"
@@ -120,16 +171,11 @@
           readonly
         ></textarea>
       </div>
-
-      <a
-        id="downloadLink"
-        class="btn btn-success"
-        href={outputLink}
-        download="modified.txt"
-        class:d-none={!outputLink}
-      >
-        Download Modified File
-      </a>
+    </div>
+    <div class="col-6">
+      <Editor hidden={visibleEditor !== 0} />
+      <Editor hidden={visibleEditor !== 1} />
+      <Editor hidden={visibleEditor !== 2} />
     </div>
   </div>
 </div>
