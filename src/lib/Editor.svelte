@@ -1,24 +1,23 @@
 <script lang="ts">
-    import type { editor } from "monaco-editor";
+    import { editor } from "monaco-editor";
     import { onMount } from "svelte";
-    import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
 
     let container: HTMLElement;
-    let editor: editor.IStandaloneCodeEditor;
+    let ed: editor.IStandaloneCodeEditor;
     export let hidden: boolean = false;
     export let initialConfig: () => editor.IStandaloneEditorConstructionOptions =
         () => ({});
 
     export function getText() {
-        return editor.getValue();
+        return ed.getValue();
     }
 
     export function setText(text: string) {
         // Select all text
-        const fullRange = editor.getModel()?.getFullModelRange();
+        const fullRange = ed.getModel()?.getFullModelRange();
 
         // Apply the text over the range
-        editor.executeEdits(null, [
+        ed.executeEdits(null, [
             {
                 text,
                 // @ts-ignore
@@ -28,21 +27,21 @@
     }
 
     export function setReadOnly(ro: boolean) {
-        editor.updateOptions({
+        ed.updateOptions({
             readOnly: ro,
         });
     }
 
     export function setLanguage(lang: string) {
-        let model = editor.getModel();
+        let model = ed.getModel();
         if (!model) {
             return;
         }
-        monaco.editor.setModelLanguage(model, lang);
+        editor.setModelLanguage(model, lang);
     }
 
     onMount(() => {
-        editor = monaco.editor.create(container, {
+        ed = editor.create(container, {
             ...initialConfig(),
             theme: "vs-dark",
             wordWrap: "on",

@@ -36,7 +36,7 @@ jobs:
       - name: Install dependencies
         run: yarn
       - name: Build web
-        run: yarn build
+        run: yarn build --base '/data-modifier/'
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact

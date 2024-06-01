@@ -1,4 +1,4 @@
-import * as monaco from 'monaco-editor';
+import { languages } from 'monaco-editor';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
@@ -21,10 +21,10 @@ self.MonacoEnvironment = {
 		if (label === 'html' || label === 'handlebars' || label === 'razor') {
 			return new htmlWorker();
 		}
-		if (label === 'markdown' || label === 'mdt'  || label === 'mdt-object') {
+		if (label === 'markdown' || label === 'mdt' || label === 'mdt-object') {
 			return new mdWorker();
 		}
-		if (label === 'csv'  || label === 'csv-object') {
+		if (label === 'csv' || label === 'csv-object') {
 			return new csvWorker();
 		}
 		if (label === 'sql' || label === 'sql-object') {
@@ -40,4 +40,4 @@ self.MonacoEnvironment = {
 	}
 };
 
-monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
+languages.typescript.typescriptDefaults.setEagerModelSync(true);
