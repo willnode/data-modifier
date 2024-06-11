@@ -25,7 +25,7 @@
   let outputSize = null;
   let outputEditor: Editor;
   let outputText = "";
-  let outputRaw = '';
+  let outputRaw = "";
   let outputLink = "";
 
   let visibleEditor = -1;
@@ -69,6 +69,9 @@
   }
 
   async function process() {
+    if (visibleEditor === 0 || visibleEditor == 1) {
+      updateEditor(visibleEditor);
+    }
     try {
       const finalInput = parse(inputRaw || inputText, inputType);
       const userFunction = new Function("content", functionText);
@@ -83,6 +86,10 @@
     const blob = new Blob([outputRaw], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     outputLink = url;
+
+    if (visibleEditor === 2) {
+      updateEditor(visibleEditor);
+    }
   }
 
   function updateEditor(i: number) {

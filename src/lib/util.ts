@@ -50,9 +50,9 @@ export function parse(data: string, type: string): any {
         case 'yaml-docs':
             return yaml.parseAllDocuments(data);
         case 'csv':
-            return papa.parse(data).data;
+            return papa.parse(data.trimEnd()).data;
         case 'csv-object':
-            return papa.parse(data, {
+            return papa.parse(data.trimEnd(), {
                 header: true,
             }).data;
         case 'mdt':
@@ -94,7 +94,44 @@ export function stringify(data: any, type: string): string {
             var csv = papa.parse(papa.unparse(data));
             // @ts-ignore
             return markdownTable(csv.data);
+        case 'sql':
+            if (!Array.isArray(data)) {
+                return '';
+            }
+            return data.map(x => Array.isArray(x) ? stringifySqlRow(x) : '').join(',\n') + ';\n';
+        case 'sql-object':
+            var csv = papa.parse(papa.unparse(data));
+            return "INSERT INTO (" + csv.meta.fields?.map(x => `"${x}"`).join(", ") + ") VALUES\n" +
+                csv.data.map(x => Array.isArray(x) ? stringifySqlRow(x) : '').join(',\n') + ';\n';
         default:
             return '';
     }
+}
+
+function stringifySqlRow(row: any[]) {
+    const items = [];
+    for (const item of row) {
+        switch (typeof item) {
+            case 'string':
+                items.push(`'${item.replace("'", "''")}'`)
+                break;
+            case 'number':
+                items.push(item);
+                break;
+            case 'boolean':
+                items.push(item ? 'true' : 'false');
+                break;
+            case 'object':
+                if (item instanceof Date) {
+                    items.push("'" + item.toISOString().slice(0, 19).replace('T', ' ') + "'");
+                } else {
+                    items.push('null');
+                }
+                break;
+            default:
+                items.push('null');
+                break;
+        }
+    }
+    return `(${items.join(', ')})`;
 }
